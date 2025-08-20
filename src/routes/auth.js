@@ -25,7 +25,7 @@ router.post("/register", async (req, res) => {
     await user.save();
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expires: "7d",
+      expiresIn: "7d",
     });
 
     res.cookie("token", token, { httpOnly: true, sameSite: "strict" });
@@ -61,5 +61,23 @@ router.post("/logout", (req, res) => {
   res.clearCookie("token");
   res.json({ msg: "Logged out successfully" });
 });
+
+// router.get(
+//   "/google",
+//   passport.authenticate("google", { scope: ["profile", "email"] })
+// );
+
+// router.get(
+//   "/google/callback",
+//   passport.authenticate("google", { session: false }),
+//   (req, res) => {
+//     const { token, user } = req.user;
+
+//     res.cookie("token", token, { httpOnly: true, sameSite: "strict" });
+
+//     res.redirect(`http://localhost:3000/dashboard?token=${token}`);
+//     // res.json({ user, token });
+//   }
+// );
 
 export default router;
