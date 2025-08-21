@@ -1,83 +1,28 @@
-import bcrypt from "bcryptjs";
 import express from "express";
-import jwt from "jsonwebtoken";
-import User from "../models/User.js";
+import passport from "passport";
+import { login, logout, register } from "../controllers/authController.js";
 const router = express.Router();
 
-router.post("/register", async (req, res) => {
-  try {
-    const { name, email, password, gender, goal, dietType } = req.body;
-    let user = await User.findOne({ email });
+// local auth
+router.post("/register", register);
+router.post("/login", login);
+router.post("/logout", logout);
 
-    if (user) res.status(400).json({ msg: "user already exists" });
+router.get(
+  "/google",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    user = new User({
-      name,
-      email,
-      password: hashedPassword,
-      gender,
-      goal,
-      dietType,
-    });
-    await user.save();
-
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
-    });
-
-    res.cookie("token", token, { httpOnly: true, sameSite: "strict" });
-
-    res.json({ user });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+router.get(
+  "/google/callback",
+  passport.authenticate("google", { failureRedirect: "/login" }),
+  (req, res) => {
+    if (req.user.age) {
+      res.redirect("http://localhost:5173/profile");
+    } else {
+      res.redirect("http://localhost:5173/complete-profile");
+    }
   }
-});
-
-router.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ msg: "Invalid credentials" });
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ msg: "Invalid credentials" });
-
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
-    });
-    res.cookie("token", token, { httpOnly: true, sameSite: "strict" });
-
-    res.json({ user });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-router.post("/logout", (req, res) => {
-  res.clearCookie("token");
-  res.json({ msg: "Logged out successfully" });
-});
-
-// router.get(
-//   "/google",
-//   passport.authenticate("google", { scope: ["profile", "email"] })
-// );
-
-// router.get(
-//   "/google/callback",
-//   passport.authenticate("google", { session: false }),
-//   (req, res) => {
-//     const { token, user } = req.user;
-
-//     res.cookie("token", token, { httpOnly: true, sameSite: "strict" });
-
-//     res.redirect(`http://localhost:3000/dashboard?token=${token}`);
-//     // res.json({ user, token });
-//   }
-// );
+);
 
 export default router;
