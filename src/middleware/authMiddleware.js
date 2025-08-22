@@ -6,9 +6,7 @@ export const authMiddleware = async (req, res, next) => {
 
   if (!token) res.status(401).json({ msg: "not authorized, no token" });
   try {
-    console.log("secret:", process.env.JWT_SECRET);
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log("decoded:", decoded);
 
     req.user = await User.findById(decoded.id).select("-password");
     next();

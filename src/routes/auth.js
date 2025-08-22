@@ -1,6 +1,7 @@
 import express from "express";
 import passport from "passport";
 import { login, logout, register } from "../controllers/authController.js";
+import { authMiddleware } from "../middleware/authMiddleware.js";
 const router = express.Router();
 
 // local auth
@@ -24,5 +25,9 @@ router.get(
     }
   }
 );
+
+router.get("/protected", authMiddleware, (req, res) => {
+  res.status(200).json({ user: req.user });
+});
 
 export default router;
